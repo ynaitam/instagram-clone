@@ -1,0 +1,10 @@
+To be done:
+
+
+1) Showing images on timeline from follow list --done
+2) A timelink link when successfully uploaded image as well as while posting image --done
+3) Not inserting redundant entries in following table-- done
+4) Displaying user already exists for follow mechanism if we follow same person -- done
+5) Session getting expired after going backward. --pending
+6) Showing follower and folling list --done
+7) Showing suggestion list --done
