@@ -1,0 +1,40 @@
+{% extends 'layout.html' %}
+
+{% block body %}
+<style>
+.image-cropper {
+    width: 60px;
+    height: 60px;
+    position: relative;
+    overflow: hidden;
+    border-radius: 50%;
+}.profile-pic {
+  display: inline;
+  margin: 0 auto;
+  margin-left: -25%; //centers the image
+  height: 100%;
+  width: auto;
+}
+</style>
+<br>
+<form action="{{ url_for('on_follow') }}" method="post" >
+<div class="jumbotron text-center">
+    <ul class="list-group">
+            {% for one_element in suggestion_list %}
+            <div style="display: block;padding: 10px;margin-bottom: 20px;text-align: justify;margin-left:auto; margin-right:0;">
+                    <li class="list-group-item" class="lead">
+                        <input  style="float:right" class="btn btn-primary btn-lg" type="submit" name="{{ one_element }} " value="Follow" onclick="return confirm('Are you sure you want to follow {{ one_element }} ? ');"> &nbsp;
+                        <img class="image-cropper" src="data:;base64,{{ one_element['profile_photo'] }}">
+                        &nbsp;&nbsp;&nbsp;&nbsp;<b>@{{ one_element["username"] }}<br></b>
+
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{{ one_element["name"]  }}
+
+<br>
+                        {{ suggestion_list[one_element] }}
+                    </li>
+            </div>
+            {% endfor %}
+    </ul>
+</div>
+</form>
+{% endblock %}

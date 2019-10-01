@@ -1,0 +1,18 @@
+{% extends 'layout.html' %}
+
+{% block body %}
+<br>
+<div class="jumbotron text-center">
+    {% if session.uid == NULL %}
+        <h1>Welcome to Instagram Clone</h1>
+        <p class="lead">Hope you are doing well.<br><br></p>
+        <a href="/register" class="btn btn-primary btn-lg">Sign Up</a>
+        <a href="/login" class="btn btn-success btn-lg">Login</a><br><br>
+        <a href="{{ authorization_url }}" class="btn btn-danger btn-lg">Login with Google</a>
+    {% else %}
+        <h1>Hi {{ session.s_name }}</h1>
+        <p class="lead">Hope you are doing well.<br><br><br></p>
+        <a href="/chatting/{{ session.uid }}" class="btn btn-primary btn-lg">Let's Start Chat</a>
+    {% endif %}
+</div>
+{% endblock %}

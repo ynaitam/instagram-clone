@@ -1,0 +1,50 @@
+{% extends 'layout.html' %}
+
+{% block body %}
+<style>
+.image-cropper {
+    width: 60px;
+    height: 60px;
+    position: relative;
+    overflow: hidden;
+    border-radius: 50%;
+}.profile-pic {
+  display: inline;
+  margin: 0 auto;
+  margin-left: -25%; //centers the image
+  height: 100%;
+  width: auto;
+}
+</style>
+<script>
+$(document).ready(function(){
+  $("#myInput").on("keyup", function() {
+    var value = $(this).val().toLowerCase();
+    $("#myList li").filter(function() {
+      $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+    });
+  });
+});
+</script>
+
+<center>
+
+  <div class="jumbotron text-center">
+    <input class="form-control" id="myInput" type="text" placeholder="Search here..">
+  <br>
+  <ul class="list-group" id="myList">
+    {% for one_user in user_datas %}
+
+                    <li class="list-group-item" class="lead" style="display:none;text-align: left;">
+                        <img class="image-cropper" src="data:;base64,{{ one_user['profile_photo'] }}">
+                        &nbsp;&nbsp;&nbsp;&nbsp;<b>@{{ one_user["username"] }}</b><br>
+
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{{ one_user["name"]  }}
+                    </li>
+            {% endfor %}
+
+  </ul>
+  </div>
+</center>
+
+{% endblock %}

@@ -1,0 +1,32 @@
+{% extends 'layout.html' %}
+
+{% block body %}
+<style>
+.image-cropper {
+    width: 60px;
+    height: 60px;
+    position: relative;
+    overflow: hidden;
+    border-radius: 50%;
+}.profile-pic {
+  display: inline;
+  margin: 0 auto;
+  margin-left: -25%; //centers the image
+  height: 100%;
+  width: auto;
+}
+</style>
+<br>
+<div class="jumbotron text-center">
+    <ul class="list-group">
+            {% for one_user in list_of_followers_user %}
+            <div style="display: block;padding: 10px;margin-bottom: 20px;text-align: justify;margin-left:auto; margin-right:0;">
+                    <li class="list-group-item" class="lead">
+                       <img class="image-cropper" src="data:;base64,{{ one_user['profile_photo'] }}"alt="Profile Image" > &nbsp;{{ one_user['name'] }}
+                    </li>
+            </div>
+            {% endfor %}
+    </ul>
+     <br>
+</div>
+{% endblock %}

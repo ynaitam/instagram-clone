@@ -1,0 +1,104 @@
+{% extends 'layout.html' %}
+
+{% block body %}
+<style>
+.image-cropper {
+    width: 250px;
+    height: 250px;
+    position: relative;
+    overflow: hidden;
+    border-radius: 50%;
+}.profile-pic {
+  display: inline;
+  margin: 0 auto;
+  margin-left: -25%; //centers the image
+  height: 100%;
+  width: auto;
+}
+
+.div-3image {
+max-width: 100%;
+}
+
+.img-3image {
+    display: inline-block;
+    max-width: 98%;
+    height: auto;
+    width: 30%;
+    margin: 1%;
+}
+</style>
+<br>
+
+<div class="jumbotron text-center">
+
+{% if change_profile == "1" %}
+<center>
+<form method="post" action="http://localhost:5000/change_profile_photo" enctype="multipart/form-data">
+    <input type="file" name="new_profile"><br>
+    <input type="submit" value="Change Profile Photo" name="new_profile" class="btn btn-primary" >
+</form>
+</center>
+{% endif %}
+
+
+    <ul class="list-group">
+            {% if list_of_user %}
+            <div style="display: block;padding: 10px;margin-bottom: 20px;text-align: justify;margin-left:auto; margin-right:0;">
+
+                    <li class="list-group-item" class="lead">
+                        <form action="http://localhost:5000/profile" method="post" enctype="multipart/form-data">
+                       <img class="image-cropper" src="data:;base64,{{ list_of_user['profile_photo'] }}"alt="Profile Image" > &nbsp;
+                           <input type="submit" class="btn btn-primary" value="Change profile photo" style="float:right;">
+                        <h2>{{ list_of_user['name'] }}
+                        {% if active != '0' %}
+                            <span style="height: 12px;width: 12px;background-color: #1fc124;border-radius: 6px;float:right;margin-top: 5px;"></span><br>
+                        {% else %}
+                            <span style="height: 12px;width: 12px;background-color: #c4bdbd;border-radius: 6px;
+                            margin-top: 5px;"></span><br>
+                        {% endif %}
+                        @{{ list_of_user['username'] }}<br>
+                            </h2>
+                            <h2 class="lead">
+                            <br><br>
+
+
+
+                                <table width="100%">
+
+                                <tr>
+                                    <td>
+                                        <b>Follower </b><br>{{ no_of_followers }}
+                                    </td>
+
+                                <td>
+                                    <b>Following </b><br> {{ no_of_following }}
+                                </td>
+                                <td>
+                                    <b>Posts </b><br> {{ no_of_posts }}
+                                </td>
+                                </tr>
+
+                            </table>
+
+                            <br><br>
+                            </h2>
+                             </form>
+                    </li>
+            </div>
+        {% endif %}
+    </ul>
+<h3 class ="lead" align="left">Posts: </h3>
+    <div class = "container-fluid" style="
+  justify-content: space-between;
+  margin: 10px auto;
+  padding: 10px 0;">
+ {% for file in list_of_post %}
+
+            <img src="data:;base64,{{ file['photo'] }}" width="32%"  height="200px">&nbsp;&nbsp;
+
+          {% endfor %}
+    </div>
+
+</div>
+{% endblock %}

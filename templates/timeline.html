@@ -1,0 +1,54 @@
+{% extends 'layout.html' %}
+
+{% block body %}
+<br>
+<style>
+.image-cropper {
+    width: 60px;
+    height: 60px;
+    position: relative;
+    overflow: hidden;
+    border-radius: 50%;
+}.profile-pic {
+  display: inline;
+  margin: 0 auto;
+  margin-left: -25%; //centers the image
+  height: 100%;
+  width: auto;
+}
+</style>
+
+<div class="jumbotron text-center">
+    <ul class="list-group">
+{% if current_image %}
+
+<a href="/timeline"><input type='submit' value="Go to Timeline" class="btn btn-primary"></a>
+
+<br><br><li class="list-group-item" class="lead">
+        <img src="data:;base64,{{ current_image }}"width="600px" height="500px">
+        <br>
+        {{ caption }}
+         </li>
+
+{% else %}
+        <ul class="list-group">
+ {% for file in list_of_image %}
+
+        <li class="list-group-item" class="lead">
+       <p align ="left"><img class="image-cropper" src="data:;base64,{{ file['profile_photo'] }}"> &nbsp;<b>{{ file['name'] }} </b>posted at {{ file['time'] }}. </p>
+            <img src="data:;base64,{{ file['photo'] }}" width="600px" height="500px">
+            <br><br>
+            {% if file.caption != None %}
+            <p align ="left">{{ file.caption }}</p>
+            {% endif %}
+            <br>
+        </li>
+            <br> <br>
+  {% endfor %}
+</div>
+
+{% endif %}
+
+</div>
+
+{% endblock %}
