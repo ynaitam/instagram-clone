@@ -25,9 +25,12 @@
             {% for user in users %}
                 {% if user.id != session.uid %}
                     <li class="list-group-item"><a href="{{user.id}}"> {{user.name}} </a>
-                        {% if user.active != '0' %}
+                         {% if triger != 0 %}
+                        <span class="badge">{{  triger }}</span>
+                        {% endif %}
+                       {% if user.active != '0' %}
                             <span style="height: 12px;width: 12px;background-color: #1fc124;border-radius: 6px;
-                            float: right;margin-top: 5px;"></span>
+                            float: right;margin-top: 5px;" ></span>
                         {% else %}
                             <span style="height: 12px;width: 12px;background-color: #c4bdbd;border-radius: 6px;
                             float: right;margin-top: 5px;"></span>

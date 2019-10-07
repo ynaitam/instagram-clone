@@ -30,16 +30,30 @@ max-width: 100%;
 </style>
 <br>
 
-<div class="jumbotron text-center">
+<div class="jumbotron">
 
 {% if change_profile == "1" %}
-<center>
+
+    <div class="form-group">
 <form method="post" action="http://localhost:5000/change_profile_photo" enctype="multipart/form-data">
-    <input type="file" name="new_profile"><br>
-    <input type="submit" value="Change Profile Photo" name="new_profile" class="btn btn-primary" >
+
+    <label><strong>Username</strong></label>
+    <input type="text" value="{{current_user.username }}" name="username" class="form-control" >
+    <br><br>
+    <label><strong>Name</strong></label>
+   <input type="text" value="{{current_user.name }}" name="name" class="form-control">
+    <br><br>
+    <label><strong>Bio</strong></label>
+    <input type="text" value="{{current_user.bio }}" name="bio" class="form-control">
+    <br><br>
+    <label><strong>Change Profile Image</strong></label>
+    <input type="file" name="new_profile"  class="form-control-file" >
+    <br><br>
+    <input type="submit" value="Change Profile Photo" name="new_profile" class="btn btn-primary" ><br>
 </form>
-</center>
-{% endif %}
+    </div>
+
+{% else %}
 
 
     <ul class="list-group">
@@ -49,7 +63,7 @@ max-width: 100%;
                     <li class="list-group-item" class="lead">
                         <form action="http://localhost:5000/profile" method="post" enctype="multipart/form-data">
                        <img class="image-cropper" src="data:;base64,{{ list_of_user['profile_photo'] }}"alt="Profile Image" > &nbsp;
-                           <input type="submit" class="btn btn-primary" value="Change profile photo" style="float:right;">
+                           <input type="submit" class="btn btn-primary" value="Edit Profile" style="float:right;">
                         <h2>{{ list_of_user['name'] }}
                         {% if active != '0' %}
                             <span style="height: 12px;width: 12px;background-color: #1fc124;border-radius: 6px;float:right;margin-top: 5px;"></span><br>
@@ -57,8 +71,13 @@ max-width: 100%;
                             <span style="height: 12px;width: 12px;background-color: #c4bdbd;border-radius: 6px;
                             margin-top: 5px;"></span><br>
                         {% endif %}
-                        @{{ list_of_user['username'] }}<br>
-                            </h2>
+                        @{{ list_of_user['username'] }}<br></h2>
+                            <h4>
+                            {% if list_of_user["bio"] %}
+                            {{ list_of_user["bio"] }}
+                            {% endif %}<br>
+                            </h4>
+
                             <h2 class="lead">
                             <br><br>
 
@@ -95,10 +114,11 @@ max-width: 100%;
   padding: 10px 0;">
  {% for file in list_of_post %}
 
-            <img src="data:;base64,{{ file['photo'] }}" width="32%"  height="200px">&nbsp;&nbsp;
+            <img src="data:;base64,{{ file['photo'] }}" width="33.33%"  height="200px">&nbsp;&nbsp;
 
           {% endfor %}
     </div>
 
 </div>
+{% endif %}
 {% endblock %}

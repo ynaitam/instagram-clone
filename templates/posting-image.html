@@ -3,16 +3,19 @@
 
 {% block body %}
 <br>
+<div class="jumbotron">
 
-<div class="jumbotron text-center">
-    <center>
    <form action="http://localhost:5000/posting_image" method='post' enctype="multipart/form-data">
-        <input type="file" placeholder="image" name = "file_name" required><br><br>
-       <textarea rows = "5" cols = "50"name="caption" placeholder="Caption here.." width="150px" height="70px"></textarea><br><br>
+       <label><strong>Choose file to be uploaded</strong></label>
+        <input type="file" placeholder="image" name = "file_name" class="form-control-file" required><br><br>
+       <label><strong>Caption</strong></label>
+       <textarea rows = "5" cols = "50"name="caption" placeholder="Caption here.." class="form-control"></textarea><br><br>
         <input type="submit" value="Submit" class="btn btn-primary"><span></span>
+
+
     </form>
      <br>
-     </center>
+
 </div>
 
 {% endblock %}

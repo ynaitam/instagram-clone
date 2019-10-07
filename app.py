@@ -226,7 +226,7 @@ def register():
                     (name, email, username, password))
         cur.execute("select max(id) from users")
         max_id = cur.fetchone()
-        dummy_user_data = {"id": max_id["max(id)"] + 1,
+        dummy_user_data = {"id": max_id["max(id)"],
                            "name": name,
                            "email": email,
                            "username": username,
@@ -234,7 +234,8 @@ def register():
                            }
 
         insert_obj = es.index(index="instagram-clone1", doc_type="users", body=dummy_user_data,
-                              id=max_id["max(id)"] + 1)
+                              id=max_id["max(id)"])
+
 
         mysql.connection.commit()
         cur.close()
@@ -315,12 +316,29 @@ def chatting(id):
     if 'uid' in session:
         form = MessageForm(request.form)
         cur = mysql.connection.cursor()
+
         get_result = cur.execute("SELECT * FROM users WHERE id=%s", [id])
         l_data = cur.fetchone()
         if get_result > 0:
             session['name'] = l_data['name']
             uid = session['uid']
             session['lid'] = id
+            # cur.execute("select msg_time from messages where msg_by = %s and msg_to =%s",(id, uid))
+            # last_message_read_time =cur.fetchall()
+            # last_message_read_time = list(last_message_read_time)
+            # last_message_read_time=[i["msg_time"] for i in last_message_read_time]
+            # if last_message_read_time:
+            #     last_message_read_time=max(last_message_read_time)
+            #     print(last_message_read_time)
+            # last_read_time = last_message_read_time or datetime(1900, 1, 1)
+
+            # print(last_read_time)
+            # print(type(last_read_time))
+            # cursor = mysql.connection.cursor()
+            # cursor.execute("select count(*) from messages where msg_time > %s and msg_to = %s", (last_read_time, uid))
+            # triger = cursor.fetchone()
+            #
+            # triger=triger["count(*)"]
             msg_time = datetime.now().strftime(' %Y-%m-%d %H:%M:%S')
             if request.method == 'POST' and form.validate():
                 txt_body = form.body.data
@@ -344,10 +362,12 @@ def chatting(id):
                 "select * from users where id in (select user2 from following where user1 = {0})".format(
                     session['uid']))
             users = cur.fetchall()
+
             if len(users) == 0:
                 flash("No friends in your friend list.", "warning")
                 cur.close()
-            return render_template('chat_room.html', users=users, form=form)
+
+            return render_template('chat_room.html', users=users, form=form, )
         else:
             flash('No permission!', 'danger')
             logging.debug("Unauthorized user.")
@@ -407,27 +427,69 @@ def chats():
 def suggestions():
     suggestion_list = []
 
+    # try:
+    #     cursor = mysql.connection.cursor()
+    # except Exception as e:
+    #     logging.debug("Cant connect to database.")
     try:
-        cursor = mysql.connection.cursor()
-    except Exception as e:
-        logging.debug("Cant connect to database.")
-    try:
-        cursor.execute(
-            "select id from users where username not in (select username from users where id in (select user2 "
-            "from following where user1 =%s )) limit 10;",
-            (session['uid'],))
-        results = cursor.fetchall()
-        results = list(results)
-        results = [i for i in results if i["id"] != session["uid"]]
+        # cursor.execute(
+        #     "select id from users where username not in (select username from users where id in (select user2 "
+        #     "from following where user1 =%s )) limit 10;",
+        #     (session['uid'],))
+        # results = cursor.fetchall()
+        # results = list(results)
+        body = {
+            "query":
+                {
+                    "match_phrase": {
+                        "user1": session['uid']
+                    }
+                }
+        }
+        search_obj = es.search(index="instagram-following", body=body)
+        results = []
 
+        for i in search_obj["hits"]["hits"]:
+            results.append(i["_source"]["user2"])
+
+        results1 = []
         for i in results:
-            x = r.hgetall(i["id"])
+            body = {
+                "query":
+                    {
+                        "match_phrase": {
+                            "user1": i
+                        }
+                    }
+            }
+            search_obj = es.search(index="instagram-following", body=body)
+
+            for j in search_obj["hits"]["hits"]:
+                if j["_source"]["user2"] not in results1 and j["_source"]["user2"] not in results:
+                    results1.append(j["_source"]["user2"])
+
+        # all_user=[]
+        # for key in r.scan_iter():
+        #     all_user.append(key)
+        #
+        # all_user=[i.decode("utf-8") for i in all_user]
+
+        # for i in all_user:
+        #     if i not in results:
+        #         res.append(i)
+
+        results1 = [i for i in results1 if i != str(session["uid"])]
+
+        for i in results1:
+            x = r.hgetall(i)
             y = {y.decode('ascii'): x.get(y).decode('ascii') for y in x.keys() if y != b"profile_photo"}
             y["profile_photo"] = x[b"profile_photo"]
             suggestion_list.append(y)
+
         for index, user in enumerate(suggestion_list):
             suggestion_list[index]['profile_photo'] = b64encode(
                 suggestion_list[index]['profile_photo']).decode("utf-8")
+
         if len(suggestion_list) == 0:
             flash("No more suggestion.", "danger")
             logging.debug("No suggestion found.")
@@ -451,18 +513,44 @@ def on_follow():
         username_clicked = ast.literal_eval(username_clicked)
         cursor.execute("select id from users where username= %s", (username_clicked["username"],))
         user_clicked = cursor.fetchone()
+
         cursor.execute(
             "select 1 from following where user1={0} and user2={1}".format(session['uid'], user_clicked['id']))
         i_exists_follower = cursor.fetchall()
+        body = {
+            "query": {
+                "bool": {
+                    "must": [
+                        {"term": {
+                            "user1": session['uid']
+
+                        }},
+                        {"term":
+                            {
+                                "user2": user_clicked['id']
+
+                            }
+                        }
+                    ]
+
+                }}}
+        search_obj = es.search(index="instagram-following", body=body)
+
         if user_clicked['id'] is not "" or user_clicked['id'] is not None:
-            if len(list(i_exists_follower)) == 0:
+            if not search_obj["hits"]["hits"]:
                 cursor.execute("INSERT into following values ({0},{1})".format(session['uid'], user_clicked['id']))
+                body = {
+                    "user1": str(session['uid']),
+                    "user2": str(user_clicked['id'])
+                }
                 mysql.connection.commit()
                 cursor.close()
+
+                insert_obj = es.index(index="instagram-following", body=body)
                 flash("Successfully followed user \"{}\" ".format(username_clicked["username"]), 'info')
 
             else:
-                flash("\"{}\" is already followed.".format(username_clicked), 'danger')
+                flash("\"{}\" is already followed.".format(username_clicked["username"]), 'danger')
 
         # results = cursor.execute("INSERT into Following(user1,user2) select ?,? " \
         #                 "where not EXISTS()",(session['user_id'],user_clicked[:-1],session['user_id'],user_clicked[:-1]))
@@ -477,13 +565,24 @@ def on_follow():
 def followers():
     list_of_followers_user = []
     try:
-        cursor = mysql.connection.cursor()
-    except Exception as e:
-        logging.debug("Cant connect to database.")
-    try:
-        cursor.execute("select user1 from following where user2 = {0}".format(session['uid']))
-        res = cursor.fetchall()
+        # cursor.execute("select user1 from following where user2 = {0}".format(session['uid']))
+        # res = cursor.fetchall()
+        body = {
+            "query":
+                {
+                    "match_phrase": {
+                        "user2": session['uid']
+                    }
+                }
+        }
+        search_obj = es.search(index="instagram-following", body=body)
+        res = []
+
+        for i in search_obj["hits"]["hits"]:
+            res.append(i["_source"])
+
         for i in res:
+
             x = r.hgetall(i['user1'])
             y = {y.decode('ascii'): x.get(y).decode('ascii') for y in x.keys() if y != b"profile_photo"}
             y["profile_photo"] = x[b"profile_photo"]
@@ -495,7 +594,7 @@ def followers():
         for index, user in enumerate(list_of_followers_user):
             list_of_followers_user[index]['profile_photo'] = b64encode(
                 list_of_followers_user[index]['profile_photo']).decode("utf-8")
-        cursor.close()
+
     except KeyError as e:
         flash("Session Expired. Please login again.", "danger")
         return redirect(url_for('index'))
@@ -514,28 +613,37 @@ def following():
     # cursor.execute(
     #     "select username,name,profile_photo from users where id in (select user2 from following where user1 = {0})".format(
     #         session['uid']))
-    try:
-        cursor.execute(
-            "select user2 from following where user1 = {0}".format(
-                session['uid']))
-        res = cursor.fetchall()
+    body = {
+        "query":
+            {
+                "match_phrase": {
+                    "user1": session['uid']
+                }
+            }
+    }
+    search_obj = es.search(index="instagram-following", body=body)
+    res = []
+    for i in search_obj["hits"]["hits"]:
+        res.append(i["_source"])
+    # try:
+    # cursor.execute(
+    #     "select user2 from following where user1 = {0}".format(
+    #         session['uid']))
+    # res = cursor.fetchall()
 
-        for i in res:
-            x = r.hgetall(i['user2'])
-            y = {y.decode('ascii'): x.get(y).decode('ascii') for y in x.keys() if y != b"profile_photo"}
-            y["profile_photo"] = x[b"profile_photo"]
-            list_of_following_user.append(y)
+    for i in res:
+        x = r.hgetall(i['user2'])
+        y = {y.decode('ascii'): x.get(y).decode('ascii') for y in x.keys() if y != b"profile_photo"}
+        y["profile_photo"] = x[b"profile_photo"]
+        list_of_following_user.append(y)
 
-        if len(list_of_following_user) == 0:
-            flash("No Following found.", "danger")
-            logging.debug("No Following found.")
-        for index, user in enumerate(list_of_following_user):
-            list_of_following_user[index]['profile_photo'] = b64encode(
-                list_of_following_user[index]['profile_photo']).decode("utf-8")
-        cursor.close()
-    except KeyError as e:
-        flash("Session Expired. Please login again.", "danger")
-        return redirect(url_for('index'))
+    if len(list_of_following_user) == 0:
+        flash("No Following found.", "danger")
+        logging.debug("No Following found.")
+    for index, user in enumerate(list_of_following_user):
+        list_of_following_user[index]['profile_photo'] = b64encode(
+            list_of_following_user[index]['profile_photo']).decode("utf-8")
+    cursor.close()
 
     return render_template('following.html', list_of_following_user=list_of_following_user)
 
@@ -706,7 +814,10 @@ def allowed_image(filename):
 @is_logged_in
 def my_profile():
     if request.method == "POST":
-        return render_template('profile.html', change_profile="1")
+        x = r.hgetall(session["uid"])
+        y = {y.decode('ascii'): x.get(y).decode('ascii') for y in x.keys() if y != b"profile_photo"}
+        y["profile_photo"] = b64encode(x[b"profile_photo"]).decode("utf-8")
+        return render_template('profile.html', change_profile="1",current_user=y)
     try:
         cursor = mysql.connection.cursor()
     except Exception as e:
@@ -722,60 +833,104 @@ def my_profile():
     y["profile_photo"] = b64encode(x[b"profile_photo"]).decode("utf-8")
 
     if len(active) == 0:
-        flash("No Following found.", "danger")
-        logging.debug("No Following found.")
+        flash("User not online.", "danger")
+        logging.debug("User not online.")
 
-    query = "select count(*) from following where user2 = %s"
-    query_data = (session['uid'],)
-    cursor.execute(query, query_data)
-    no_of_followers = cursor.fetchall()
-    no_of_followers = no_of_followers[0]["count(*)"]
+    body = {
+        "query":
+            {
+                "match_phrase": {
+                    "user1": session['uid']
+                }
+            }
+    }
+    search_obj = es.search(index="instagram-following", body=body)
+    no_of_following = len(search_obj["hits"]["hits"])
+    # query = "select count(*) from following where user2 = %s"
+    # query_data = (session['uid'],)
+    # cursor.execute(query, query_data)
+    # no_of_followers = cursor.fetchall()
+    # no_of_followers = no_of_followers[0]["count(*)"]
+    body = {
+        "query":
+            {
+                "match_phrase": {
+                    "user2": session['uid']
+                }
+            }
+    }
+    search_obj = es.search(index="instagram-following", body=body)
+    no_of_followers = len(search_obj["hits"]["hits"])
 
-    query = "select count(*) from following where user1 = %s"
-    query_data = (session['uid'],)
-    cursor.execute(query, query_data)
-    no_of_following = cursor.fetchall()
-    no_of_following = no_of_following[0]["count(*)"]
+    # query = "select count(*) from following where user1 = %s"
+    # query_data = (session['uid'],)
+    # cursor.execute(query, query_data)
+    # no_of_following = cursor.fetchall()
+    # no_of_following = no_of_following[0]["count(*)"]
 
-    query = "select count(*) from photoposted where posted_by= %s"
-    query_data = (session['uid'],)
-    cursor.execute(query, query_data)
-    no_of_posts = cursor.fetchall()
-    no_of_posts = no_of_posts[0]["count(*)"]
+    # body = {
+    #     "query":
+    #         {
+    #             "match_phrase": {
+    #                 "user2": session['uid']
+    #             }
+    #         }
+    # }
+    # search_obj = es.search(index="instagram-following", body=body)
+    # no_of_posts = len(search_obj["hits"]["hits"])
 
-    list_of_post=[]
+    # query = "select count(*) from photoposted where posted_by= %s"
+    # query_data = (session['uid'],)
+    # cursor.execute(query, query_data)
+    # no_of_posts = cursor.fetchall()
+    # no_of_posts = no_of_posts[0]["count(*)"]
+
+    list_of_post = []
     body = {"query": {
-        "match": {'posted_by': str(session["uid"])}
+        "match_phrase": {'posted_by': str(session["uid"])}
     }}
     search_obj = es.search(index="instagram-photoposted", body=body, size=1000)
-    print(len(search_obj["hits"]["hits"]))
+
+    no_of_posts = len(search_obj["hits"]["hits"])
     for i in search_obj["hits"]["hits"]:
         list_of_post.append(i["_source"])
 
-    for i,j in enumerate(list_of_post):
+    for i, j in enumerate(list_of_post):
         if j["photo"].startswith(r"b'"):
             j["photo"] = j["photo"][2:]
             j["photo"] = j["photo"][:-1]
 
-
     cursor.close()
     return render_template('profile.html', list_of_user=y, active=active, no_of_posts=no_of_posts,
-                           no_of_following=no_of_following, no_of_followers=no_of_followers,list_of_post=list_of_post)
+                           no_of_following=no_of_following, no_of_followers=no_of_followers, list_of_post=list_of_post)
 
 
 @app.route('/change_profile_photo', methods=["GET", "POST"])
 def change_profile_photo():
     if request.method == "POST":
         file_content = request.files['new_profile'].read()
+        bio = request.form["bio"]
+        username = request.form["username"]
+        name = request.form["name"]
+
         try:
             cursor = mysql.connection.cursor()
         except Exception as e:
             logging.debug("Cant connect to database.")
+
         query = "update users set profile_photo =%s where id = %s"
 
         # Redis code here
         # set_Obj = r.set(session['uid'], file_content)
-        set_Obj = r.hset(session['uid'], "profile_photo", file_content)
+        if file_content:
+            set_Obj = r.hset(session['uid'], "profile_photo", file_content)
+        if username:
+            set_Obj = r.hset(session['uid'], "username", username)
+        if name:
+            set_Obj = r.hset(session['uid'], "name", name)
+        if bio:
+            set_Obj = r.hset(session['uid'], "bio", bio)
+
 
         query_data = (file_content, session['uid'])
         cursor.execute(query, query_data)
